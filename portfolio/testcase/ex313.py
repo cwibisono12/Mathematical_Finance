@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import sys
+sys.path.append("..")
+from lib import optimize as op
+import matplotlib.pyplot as plt
+import matplotlib.ticker as tck
+import numpy as np
+
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+plt.rcParams['figure.dpi'] = 150	
+
+def ex313():
+	sigma = [0.25, 0.28, 0.20]
+	m = [0.20, 0.13, 0.17]
+	rho = [[1, 0.30, 0.15],[0.30,1,0.],[0.15,0,1.]]
+	mu_v = np.arange(0,0.9,0.01)
+
+	#Compute the Covariance Matrix:
+	Cov= op.cov_construct(rho,sigma)
+	
+	#Compute the vectors a and b associated with the minimum variance line:
+	a, b = op.eff_frontier_vector(m,Cov)
+
+	#Define The Axes:
+	fig, ax = plt.subplots()
+	ax.tick_params(direction='in',axis='both',which='major',bottom='True',left='True',right='True',top='True',length=9,width=0.75)
+	ax.tick_params(direction='in',axis='both',which='minor',bottom='True',left='True',right='True',top='True',length=6,width=0.75)
+	
+	n = len(mu_v)
+	sigma_v = []
+	#Compute the risk from the vectors:
+	for j in range(n):
+		w_eff2 = []
+		dim = len(m)
+		for k in range(dim):
+			temp = mu_v[j]*a[k] + b[k]
+			w_eff2.append(temp)
+	
+		mu2_v, sigma2_v = op.value(m,Cov,w_eff2)
+		sigma_v.append(sigma2_v)
+
+	ax.plot(sigma_v,mu_v,color='m',linewidth = 0.85, label='Markowitchz Line')
+	ax.set_ylabel(r'Expected Return $\mu$',style='normal',fontweight='bold')
+	ax.set_xlabel(r'Risk $\sigma$',style='normal',fontweight='bold')
+	ax.legend()
+
+	plt.show()
+
+if __name__ == "__main__":
+	ex313()

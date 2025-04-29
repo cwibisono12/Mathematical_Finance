@@ -189,7 +189,7 @@ def eff_frontier_vector(m,C):
 		M[1][1] = M[1][1] + uCinv[k0]*u[k0]
 
 	Minv = matinv(M)
-
+	tempb = [mu_v, 1]
 
 	a = []
 	b = []
