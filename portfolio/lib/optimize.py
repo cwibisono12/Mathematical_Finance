@@ -42,7 +42,7 @@ def mvp(C):
 	'''
 	Minimum Variance Portfolio:
 	C. Wibisono
-	05/29 '25
+	04/29 '25
 	Function Argument(s):
 	C: covariance matrix between returns
 	Return:
@@ -72,7 +72,7 @@ def value(m,C,w):
 	'''
 	Compute the expected return and risk given a weight for the portfolio:
 	C. Wibisono
-	05/29 '25
+	04/29 '25
 	Function Argument(s):
 	m: list (1D arr of expected returns for each security)
 	C: list (2D arr consisting of covariance matrix between a pair of securities)
@@ -105,7 +105,7 @@ def eff_frontier(m,C,mu_v):
 	'''
 	Compute the weight associated with the minimum variance line for a given expected return mu_v:
 	C. Wibisono
-	05/29 '25
+	04/29 '25
 	Function Argument(s):
 	m: list (1D arr of expected return for each security)
 	C: list (2D arr consisting of covariance matrix between a pair of securities)
@@ -158,7 +158,7 @@ def eff_frontier_vector(m,C):
 	The weigth associated with the minimum variance line can be expressed as linear combination of expected return.
 	Compute the a and b vectors with the minimum variance line:
 	C. Wibisono
-	05/29 '25
+	04/29 '25
 	Function Argument(s):
 	m: list (1D arr of expected return for each security)
 	C: list (2D arr consisting of covariance matrix between a pair of securities)
@@ -200,3 +200,50 @@ def eff_frontier_vector(m,C):
 		b.append(temp_b)	
 
 	return a, b
+
+
+def eff_frontier_mp(m,C,R):
+	'''
+	Compute the weight associated with the market portfolio along the capital market line (CML).
+	C. Wibisono
+	04/30 '25
+	Function Argument(s):
+	m: list (1D arr of expected return for each security)
+	C: list (2D arr consisting of covariance matrix between a pair of securities)
+	R: (float) return of a risk-free security
+	Return(s):
+	w_eff_mp: weight associated with the market portfolio
+	mu_v: the expected return of the market portfolio
+	sigma_v: the risk of the market portfolio
+	'''
+	Cinv = matinv(C)
+	dim = len(m)
+	u = []
+	w_eff_mp = []
+	mCinv = []
+	uCinv = []
+	denum = 0
+	for q in range(dim):
+		u.append(1)
+		mCinv.append(0)
+		uCinv.append(0)
+
+	for k0 in range(dim):
+		for k1 in range(dim):
+			mCinv[k0] = mCinv[k0] + (m[k1]*Cinv[k1][k0])
+			uCinv[k0] = uCinv[k0] + (u[k1]*Cinv[k1][k0])
+		a = mCinv[k0]
+		b = R*uCinv[k0]
+		temp = a - b
+		denum = denum + temp 
+
+	for k in range(dim):
+		temp_2 = (mCinv[k] -R*uCinv[k])/denum
+		w_eff_mp.append(temp_2)
+
+	
+
+
+	mu_b, sigma_b = value(m,C,w_eff_mp)
+
+	return w_eff_mp, mu_b, sigma_b
