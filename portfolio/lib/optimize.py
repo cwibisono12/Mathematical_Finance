@@ -247,3 +247,22 @@ def eff_frontier_mp(m,C,R):
 	mu_b, sigma_b = value(m,C,w_eff_mp)
 
 	return w_eff_mp, mu_b, sigma_b
+
+def minline(a,b,mu_v):
+	'''
+	Compute the weight associated with the minimum variance line given vectors a and b.
+	C. Wibisono
+	05/01 '25
+	Function Argument(s):
+	a: list(1D arr of vector a obtained from minimizing the variance line)
+	b: list(1D arr of vector b obtained from minimizing the variance line)
+	mu_v: (float) expected return
+	Return:
+	w: list (1D arr of weight factor of the portfolio lies along the minimum variance line)
+	'''
+	w = []
+	dim = len(a)
+	for k in range(dim):
+		w.append(mu_v*a[k]+b[k])
+
+	return w

@@ -74,7 +74,7 @@ def excase3():
 	mu_mvp, sigma_mvp = op.value(m,Cov,w_mvp)
 	#Print the Expected Return and Risk:
 	print("Expected Return %(MVP):",mu_mvp*100,"Risk %(MVP):",100*sigma_mvp)
-
+	print("\n")
 	#Compute the weight associated with the Market Portfolio:
 	w_mp, mu_mp,sigma_mp = op.eff_frontier_mp(m,Cov,R) 
 	#Print the weight of the Market Portfolio::
@@ -82,7 +82,7 @@ def excase3():
 
 	#Print the Expected Return and Risk:
 	print("Expected Return %(MP):",100*mu_mp,"Risk %(MP):",100*sigma_mp)
-	
+	print("\n")
 	#As one of the weight is negative, we are not permitted to use the w_mp values as it 
 	#will violate the investment restriction in which no short selling is permitted.
 	
@@ -151,12 +151,49 @@ def excase3():
 			max_grad_new_CML = temp
 			ind_max_CML = i
 
-	print("max_CML:",sigma13_v[ind_max_CML],"mu:",mu_v[ind_max_CML])
+	#Compute the weight associated with the Market Portfolio with the new CML line with no short-selling:
+	w_mp_new = []
+	dim3 = len(a13)
+	for i in range(dim3):
+		w_mp_new.append(a13[i]*mu_v[ind_max_CML]+b13[i])
+	print("\n") 
+	#Print the weight associated with the new CML line with no short-selling:
+	print("Market Portfolio weight (no short-selling):",w_mp_new)
+
+	#Print the risk and expected return associated with the new CML line with no short-selling:
+	print("Expected Return: %(MP with no short-selling)",100*mu_v[ind_max_CML],"Risk %(new CML with no short selling):",100*sigma13_v[ind_max_CML])
 	
+	print("\n")
 	#Construct the new CML line:
 	mucomb_mp_new = []
 	for i in range(dim2):
 		mucomb_mp_new.append(cml(mu_v[ind_max_CML],sigma13_v[ind_max_CML],R,sigmacomb_mp[i]))
+
+
+	#Report the Possible Portfolios for several desired risk based on the new Efficient Frontier (new CML line with no-short selling):
+	print("====================\n\n\n")
+	print("Possible Portfolios with Desired Risk:")
+	risk = [0, 0.025, 0.05, 0.075, 0.1]
+	dimrisk = len(risk)
+	ex_return = []
+	for k in range(dimrisk):
+		temp = cml(mu_v[ind_max_CML],sigma13_v[ind_max_CML],R,risk[k])
+		ex_return.append(temp)
+	
+	#Compute the weight for a given risk associated with the new efficient frontier such that the proportion
+	#of a risk-free security can be determined:
+	fracsav = []
+	for k in range(dimrisk):
+		temp_b = sum(op.minline(a13,b13,ex_return[k]))
+		temp_c = 1 - temp_b
+		fracsav.append(temp_c) #determine the fraction of income to be invested
+	#Dictionary of pair of risk, return, and income fraction to be invested:
+	arr = {}
+	for k in range(dimrisk):
+		arr[100*risk[k]] = (100*ex_return[k], 100*fracsav[k])
+
+	print(arr)
+
 
 	ax.plot(sigma_v,mu_v,color='k',linewidth = 1.0, label='Markowitchz Line (total)')
 	ax.plot(sigmacomb_mp,mucomb_mp,color='m',linewidth = 1.0, label='CML line')
