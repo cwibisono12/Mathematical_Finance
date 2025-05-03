@@ -266,3 +266,26 @@ def minline(a,b,mu_v):
 		w.append(mu_v*a[k]+b[k])
 
 	return w
+
+def frac_rf(sigma_mp, sigma_p, R):
+	'''
+	Compute the fraction (weight) associated with risk-free security in a portfolio
+	consisting of a risk free and risky assets along the Capital Market Line (CML).
+	C. Wibisono
+	05/03 '25
+	Function Argument(s):
+	sigma_mp: (float) risk associated with market portfolio
+	sigma_p: (float) desired risk
+	R: (float) return rate associated with a risk-free security
+	Return:
+	frac: (float) fraction of a risk-free security to be invested in a portfolio.
+	'''
+	#fraction of risky securities: (note that when the desired risk at the market portfolio,
+	#which is the tangent line of the CML line that intersect with the minimum variance line 
+	#of risky securities, the fraction of a risk-free is zero).
+	x = sigma_p/sigma_mp
+
+	#fraction of a risk-free security:
+	frac = 1 - x
+	
+	return frac

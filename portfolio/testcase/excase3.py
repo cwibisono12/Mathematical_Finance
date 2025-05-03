@@ -36,7 +36,11 @@ def excase3():
 	m = [0.08, 0.10, 0.14]
 	rho = [[1, 0.50, -0.3],[0.5,1,0.3],[-0.3,0.3,1.]]
 	mu_v = np.arange(0,0.9,0.001)
-	R = 0.05	
+	R = 0.05	#interest-rate associated with the risk-free asset
+	g = 0.02 #the growth rate of both income and payable risk-free asset (assumed to be the same)
+	frac = 0.5 #desired fraction of income received at year N1
+	N1 = 40 #length of investments (in year)
+	N2 = 20 #desired length of capital received (in year)
 
 	m12 = [0.08,0.10]
 	m23 = [0.10,0.14]
@@ -184,13 +188,20 @@ def excase3():
 	#of a risk-free security can be determined:
 	fracsav = []
 	for k in range(dimrisk):
-		temp_b = sum(op.minline(a13,b13,ex_return[k]))
-		temp_c = 1 - temp_b
-		fracsav.append(temp_c) #determine the fraction of income to be invested
-	#Dictionary of pair of risk, return, and income fraction to be invested:
+		temp_b = op.frac_rf(sigma13_v[ind_max_CML],risk[k], R)
+		fracsav.append(temp_b) #determine the fraction of income to be invested
+
+	#Compute the fraction of income to be paid for N1 years such that the capital can be payable for N2 years:
+	#with the rate r and growth rate g:
+	fracsav_paid = []
+	for k in range(dimrisk):
+		temp_c = sv.income_paid(ex_return[k],g,N1,frac,N2)
+		fracsav_paid.append(temp_c)
+	
+	#Dictionary of pair of risk, return, fraction of income paid, and income fraction to be invested:
 	arr = {}
 	for k in range(dimrisk):
-		arr[100*risk[k]] = (100*ex_return[k], 100*fracsav[k])
+		arr[100*risk[k]] = (100*ex_return[k], 100*fracsav_paid[k], 100*fracsav[k])
 
 	print(arr)
 
