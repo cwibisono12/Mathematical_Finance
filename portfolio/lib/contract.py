@@ -107,3 +107,38 @@ def fow_value_div_disc(r,t,t_div,T,S_0,S_t,div):
 
 	return val
 
+def future_m2m_val(r,t,T,S):
+	'''
+	Compute Marking to Market (m2m) values (cash-flow) for the future contract starting at t 
+	with delivery time T.
+	C. Wibisono
+	05/06 '25
+	Function Argument(s):
+	r: risk-free interest rate
+	t: the time when the value of the future contract is initiated.
+	T: delivery time (in year)
+	S: the risky security price from t to T [list]
+	Return:
+	m2m_val: (list) marking to market values for each time step owned by holders.
+	'''
+
+	m2m_val = []
+	dim = len(S)
+	time = []
+	future_price = []
+	for i in range(dim):
+		time.append((t+i)/12.)
+	for i in range(dim): 
+		temp_forw_f = S[i]/bond(r,time[i],T)
+		future_price.append(temp_forw_f)
+		if i == dim - 1:
+			temp_forw_f = S[i]
+		if i == 0:
+			continue
+		else:
+			temp_forw_i = S[i-1]/bond(r,time[i-1],T)
+			temp = temp_forw_f - temp_forw_i
+			m2m_val.append(temp)
+
+	return future_price, m2m_val
+			
