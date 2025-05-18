@@ -4,7 +4,8 @@ import numpy as np
 '''
 Module Description:
 Forward and Future Contracts Pricing Module:
-The forward pricing module is used to prevent arbitrage profit.
+The forward and future pricing module is used to prevent arbitrage profit.
+Future Contract is used to eliminate risk associated with the loss party.
 C. Wibisono
 Formalisms are based on Chapter 4 M. Capinski and T. Zastawniak
 Mathematics for Finance
@@ -103,6 +104,27 @@ def fow_value_div_disc(r,t,t_div,T,S_0,S_t,div):
 	
 	final = fow_price_div_disc(r,t,t_div,T,S_t,div)
 	initial = fow_price_div_disc(r,0,t_div,T,S_0,div)
+	val = (final - initial)*bond(r,t,T)
+
+	return val
+
+def fow_value_dev(r,t,T,S,X):
+	'''
+	The Value of the forward contract at time t with delivery price X with no dividend paid 
+	C. Wibisono
+	05/18 '25
+	Function Argument(s):
+	r: risk-free interest rate
+	t: the time when the value of the forward contract is measured.
+	T: delivery time
+	S: the risky security price at time t
+	X: delivery price
+	Return:
+	val: value of the forward contract
+	'''
+	
+	final = fow_price(r,t,T,S)
+	initial = X
 	val = (final - initial)*bond(r,t,T)
 
 	return val
