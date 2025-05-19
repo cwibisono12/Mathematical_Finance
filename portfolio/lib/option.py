@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import numpy as np
 from . import contract as co
+from . import binomial as bo
 
 '''
 Module Description:
 Options Pricing Module to prevent arbitrage profit
 C. Wibisono
-Formalisms are based on Chapter 5 M. Capinski and T. Zastawniak
+Formalisms are based on Chapter 5 and 6 M. Capinski and T. Zastawniak
 Mathematics for Finance
 '''
 
@@ -292,7 +293,7 @@ def am_put_call_bounds(r,T,S,X):
 def am_put_call_bounds_div_disc(r,T,S,X,div_0):
 	'''
 	Compute the lower and upper bounds associated with the American option prices
-	with the strike price X and the dividend paid continously somewhere 
+	with the strike price X and the dividend paid somewhere 
 	between the present and exercise time T with an amount div_0.
 	C. Wibisono
 	05/18 '25
@@ -323,3 +324,34 @@ def am_put_call_bounds_div_disc(r,T,S,X,div_0):
 	
 	return am_op
 
+
+def eu_option_binom_disc(R, U, D, S, X, N):
+	'''
+	Compute the European call and put option prices based on
+	Cox-Ross-Rubinstein Formula following the binomial model exercised after N time step.
+	C. Wibisono
+	05/19 '25
+	Function Argument(s):
+	R: (float) the rate of risk-free security as a form of money market account 
+	U: (float) the rate of return if the risky security price goes up
+	D: (float) the rate of return if the risky security price goes down
+	S: (float) the risky security price at time 0
+	X: (float) the strike price at the exercise time
+	N: (int) the amount of time steps to exercise the asset
+	Return:
+	C_E: (float) the european call option price
+	P_E: (float) the european put option price
+	'''
+
+	m = bo.m_order(S, U, D, N, X)
+	q = ((1+ U)/(1+R))*bo.p_star(R, U, D)
+	
+	c1 = S*(1-bo.cbd(m-1, N, q))
+	c2 = (X/((1+R)**N))*(1-bo.cbd(m-1,N,bo.p_star(R,U,D)))
+	C_E = c1 - c2
+
+	p1 = -S*bo.cbd(m-1,N,q)
+	p2 = (X/((1+R)**N))*bo.cbd(m-1,N,bo.p_star(R,U,D))
+	P_E = p1 + p2
+
+	return C_E, P_E
