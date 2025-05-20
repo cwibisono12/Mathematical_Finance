@@ -355,3 +355,83 @@ def eu_option_binom_disc(R, U, D, S, X, N):
 	P_E = p1 + p2
 
 	return C_E, P_E
+
+def am_option_binom_disc(R, U, D, S, X, N):
+	'''
+	Compute the American call and put option prices following the binomial model with expiray time N.
+	Note that the option can be exercised somewhere between present (time 0) up to expiry time N.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	R: (float) the rate of risk-free security as a form of money market account
+	U: (float) the rate of return if the risky security price goes up
+	D: (float) the rate of return if the risky security price goes down
+	S: (float) the risky security price at time 0
+	X: (float) the strike price
+	N: (int) the amount of time when the option is expired (maximum amount of time that the option can be exercised)
+	Return:
+	C_A: (float) the american call option price
+	P_A: (list) the american put option prices for each time step up to expiry time N
+	'''
+	
+	#With no dividend is paid, the american call option will be equal to european call option price.
+	C_A, P_E = eu_option_binom_disc(R, U, D, S, X, N)
+
+	#Compute the American Put Option Price:
+	#===================================================================
+	#Risk-Neutral Probability:
+	pstar = bo.p_star(R, U, D)
+
+	#Compute the possible nodes for the risky-security prices:
+	node = bo.risky_security_binom_price(N, S, U, D)
+
+	#Number of total nodes:
+	dim = len(node)
+
+	#Create another nodes representing the value of option at each time-step:
+	dim_temp = int(2**N) -1
+	h_node = [None] * dim
+	H_node = [0] * (N+1)
+
+	#Start pricing from the backward:
+	low = int(2**N) - 1
+	up = int(2**(N+1)) -1
+	
+
+	temp_max = 0
+	for i in range(low,up,1):
+		temp = bo.put_payoff(node[i].data,X)
+		h_node[i] = bo.TreeNode(temp)
+		if temp > temp_max:
+			temp_max = temp
+
+
+	#Compute the latest element of H_node:
+	H_node[N] = temp_max
+
+	#Compute the value of american option for each level:
+	for i in range(N-1,-1,-1):
+		ind_low = int(2**i) - 1
+		ind_up = int(2**(i+1)) - 1
+		temp_max = 0
+		for j in range(ind_low,ind_up,1):
+			temp_b1 = bo.put_payoff(node[j].data,X)
+			temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data, X)	
+			temp_b2_2 = (1-pstar)*bo.put_payoff(node[j].children[1].data, X)	
+			temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
+			
+		
+			if temp_b1 < temp_b2:
+				h_node[j] = bo.TreeNode(temp_b2)
+				temp_c = temp_b2
+			else:
+				h_node[j] = bo.TreeNode(temp_b1)
+				temp_c = temp_b1
+
+			if temp_c > temp_max:
+				temp_max = temp_c
+
+		H_node[i] = temp_max
+
+
+	return C_A, H_node

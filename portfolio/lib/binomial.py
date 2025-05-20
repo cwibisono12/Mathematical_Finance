@@ -51,17 +51,57 @@ def p_star(R, U, D):
 	p = a/b
 	return p
 
+def call_payoff(S, X):
+	'''
+	Compute the payoff associated with the call option at any time.
+	No dividend is paid.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	S: (float) risky security price
+	X: (float) strike price
+	Return:
+	val: (float) the payoff
+	'''
+
+	if S < X:
+		val = S - X
+	else:
+		val = 0
+
+	return val
+
+def put_payoff(S, X):
+	'''
+	Compute the payoff associated with the put option at any time.
+	No dividend is paid.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	S: (float) risky security price
+	X: (float) strike price
+	Return:
+	val: (float) the payoff
+	'''
+
+	if S > X:
+		val = 0
+	else:
+		val = X - S
+
+	return val
+
 
 def cbd(m, N, p):
 	'''
 	Compute the cumulative binomial distribution with N trials
-	with probability of sucess p for a given trial.
+	with probability of success p for a given trial.
 	C. Wibisono
 	05/19 '25
 	Function Argument(s):
-	m: (int) the index to counts satisfying a condition
+	m: (int) the index to count satisfying a condition for binomial model of an option pricing
 	N: (int) the number of trial (time-step)
-	p: (float) the probability of sucess for wach trial
+	p: (float) the probability of success for each trial
 	Return:
 	val: (float) the cumulative binomial distribution
 	'''
@@ -73,4 +113,97 @@ def cbd(m, N, p):
 
 	return val
 
- 
+
+class TreeNode:
+	'''
+	Create a tree object. This data structure is used to create
+	possible representation of risky security prices for each time step within the binomial model.
+	'''
+
+	def __init__(self, data):
+		'''
+		Instantiate a node
+		'''
+		self.data = data
+		self.children = []
+
+	def add_child(self, child):
+		'''
+		Add a child for a given node
+		'''
+		self.children.append(child)
+
+
+def risky_security_binom_price(N, S_0, U, D):
+	'''
+	Compute the risky security prices up to expiry time N to be used in conjunction with the American Option.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	N: (int) the number of trial (time-step) or expiry time
+	S_0: (float) the initial price associated with the risky security
+	U: (float) the rate of the return if the risky security price goes up
+	D: (float) the rate of the return if the risky security price goes down
+	Return:
+	node: (list) array of TreeNode objects (see TreeNode object class to retrive the class member)
+	'''
+	
+	#Create nodes container for storing the possible risky security prices according to binomial model.
+	node = []
+
+	#The first element becomes a root of the tree object
+	node.append(TreeNode(S_0))
+
+	#In the visual representation we will form as many as 2^(N+1) - 1 nodes.
+	dim = math.pow(2,N+1) -1 
+
+	#Create nodes consisting of possibles risky security prices:
+	dim_temp = int(math.pow(2,N))-1 	
+	for i in range(dim_temp):
+		up = node[i].data*(1+U)
+		down = node[i].data*(1+D)
+		n_up = TreeNode(up)
+		n_down =  TreeNode(down)
+		node.append(n_up)
+		node.append(n_down)
+		node[i].add_child(n_up)
+		node[i].add_child(n_down) 
+
+	return node	
+
+def risky_security_binom_price_level(level, node):
+	'''
+	List the risky security prices at time level.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	level: (int) the time step when the nodes are retrieved.
+	node: (list of TreeNode objects) the array of TreeNode objects from the risky_security_binom_price
+	return:
+	arr: (list of graph consisting of risky security price and its childs at time level)
+	'''
+	arr = []
+	low = int(math.pow(2, level)) - 1
+	up = int(math.pow(2,level+1))-1
+	for i in range(low, up, 1):
+		temp = {node[i].data: [node[i].children[0].data, node[i].children[1].data]}
+		arr.temp
+
+	return arr
+
+
+
+if __name__ == "__main__":
+	import sys
+	N =int(sys.argv[1])
+	level = int(sys.argv[2])
+	ans = risky_security_binom_price(N,80,0.1,-0.05)
+	n = len(ans)
+	print("number_of_nodes:",n,"compute:",int(math.pow(2,N+1))-1)
+	print("nodes for level: "+str(level))
+	low = int(math.pow(2,level))-1
+	up = int(math.pow(2,level+1))-1
+	
+	#Retrieve the nodes for a given time step (level)
+	for i in range(low,up,1):
+		print(ans[i].data, ans[i].children[0].data, ans[i].children[1].data)
