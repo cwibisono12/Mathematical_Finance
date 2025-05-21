@@ -371,7 +371,7 @@ def am_option_binom_disc(R, U, D, S, X, N):
 	N: (int) the amount of time when the option is expired (maximum amount of time that the option can be exercised)
 	Return:
 	C_A: (float) the american call option price
-	P_A: (list) the american put option prices for each time step up to expiry time N
+	P_A: (list of TreeNode objects) the american put option prices for each time step up to expiry time N
 	'''
 	
 	#With no dividend is paid, the american call option will be equal to european call option price.
@@ -390,30 +390,22 @@ def am_option_binom_disc(R, U, D, S, X, N):
 
 	#Create another nodes representing the value of option at each time-step:
 	dim_temp = int(2**N) -1
-	h_node = [None] * dim
-	H_node = [0] * (N+1)
+	H_node = [None] * dim
 
 	#Start pricing from the backward:
 	low = int(2**N) - 1
 	up = int(2**(N+1)) -1
 	
-
-	temp_max = 0
 	for i in range(low,up,1):
 		temp = bo.put_payoff(node[i].data,X)
-		h_node[i] = bo.TreeNode(temp)
-		if temp > temp_max:
-			temp_max = temp
-
-
-	#Compute the latest element of H_node:
-	H_node[N] = temp_max
+		H_node[i] = bo.TreeNode(temp)
 
 	#Compute the value of american option for each level:
 	for i in range(N-1,-1,-1):
 		ind_low = int(2**i) - 1
 		ind_up = int(2**(i+1)) - 1
-		temp_max = 0
+
+		k = 0
 		for j in range(ind_low,ind_up,1):
 			temp_b1 = bo.put_payoff(node[j].data,X)
 			temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data, X)	
@@ -422,16 +414,15 @@ def am_option_binom_disc(R, U, D, S, X, N):
 			
 		
 			if temp_b1 < temp_b2:
-				h_node[j] = bo.TreeNode(temp_b2)
-				temp_c = temp_b2
+				H_node[j] = bo.TreeNode(temp_b2)
+				H_node[j].add_child(H_node[k+ind_up])
+				H_node[j].add_child(H_node[k+1+ind_up])
 			else:
-				h_node[j] = bo.TreeNode(temp_b1)
-				temp_c = temp_b1
+				H_node[j] = bo.TreeNode(temp_b1)
+				H_node[j].add_child(H_node[k+ind_up])
+				H_node[j].add_child(H_node[k+1+ind_up])
 
-			if temp_c > temp_max:
-				temp_max = temp_c
-
-		H_node[i] = temp_max
+			k = k + 2
 
 
 	return C_A, H_node

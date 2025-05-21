@@ -180,14 +180,13 @@ def risky_security_binom_price_level(level, node):
 	level: (int) the time step when the nodes are retrieved.
 	node: (list of TreeNode objects) the array of TreeNode objects from the risky_security_binom_price
 	return:
-	arr: (list of graph consisting of risky security price and its childs at time level)
+	arr: (dict consisting of risky security price and its childs at time level)
 	'''
-	arr = []
+	arr = {}
 	low = int(math.pow(2, level)) - 1
 	up = int(math.pow(2,level+1))-1
 	for i in range(low, up, 1):
-		temp = {node[i].data: [node[i].children[0].data, node[i].children[1].data]}
-		arr.temp
+		arr[node[i].data] = [node[i].children[0].data, node[i].children[1].data]
 
 	return arr
 
@@ -197,7 +196,7 @@ if __name__ == "__main__":
 	import sys
 	N =int(sys.argv[1])
 	level = int(sys.argv[2])
-	ans = risky_security_binom_price(N,80,0.1,-0.05)
+	ans = risky_security_binom_price(N,60,0.1,-0.05)
 	n = len(ans)
 	print("number_of_nodes:",n,"compute:",int(math.pow(2,N+1))-1)
 	print("nodes for level: "+str(level))
