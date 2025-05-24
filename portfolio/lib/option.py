@@ -476,7 +476,7 @@ def am_option_hedge_stock(s_node, h_node):
 
 def am_option_hedge_market(x_node, s_node, h_0, R):
 	'''
-	Compute the risky security position for the option writer to readjust the portfolio.
+	Compute the money-market position for the option writer to readjust the portfolio.
 	C. Wibisono
 	05/23 '25
 	Function Argument(s):
