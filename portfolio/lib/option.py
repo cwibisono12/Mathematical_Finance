@@ -408,8 +408,8 @@ def am_option_binom_disc(R, U, D, S, X, N):
 		k = 0
 		for j in range(ind_low,ind_up,1):
 			temp_b1 = bo.put_payoff(node[j].data,X)
-			temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data, X)	
-			temp_b2_2 = (1-pstar)*bo.put_payoff(node[j].children[1].data, X)	
+			temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data,X)	
+			temp_b2_2 = (1-pstar)*bo.put_payoff(node[j].children[1].data,X)
 			temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
 			
 		
@@ -426,3 +426,148 @@ def am_option_binom_disc(R, U, D, S, X, N):
 
 
 	return C_A, H_node
+
+
+def am_option_hedge_stock(s_node, h_node):
+	'''
+	Compute the risky security position for the option writer to readjust the portfolio.
+	C. Wibisono
+	05/23 '25
+	Function Argument(s):
+	s_node: (list of TreeNode objects) list of possible risky security prices.
+	h_node: (list of TreeNode objects) list of possible put option values.
+	Return:
+	x_node: (list of TreeNode object) list of possible stock position.
+	'''
+
+	#Count the number of steps:
+	dim = len(h_node)
+	N = int(np.log2(dim + 1)) -1
+	x_node =[None] * (int(2**(N)) - 1)
+
+	#Start pricing from the backward:
+	low = int(2**(N-1)) - 1
+	up = int(2**(N)) -1
+	
+	for i in range(low,up,1):
+		num = h_node[i].children[0].data - h_node[i].children[1].data
+		denum = s_node[i].children[0].data -s_node[i].children[1].data
+		x_node[i] = bo.TreeNode(num/denum)
+	
+	#Compute the value of american option for each level:
+	for i in range(N-2,-1,-1):
+		ind_low = int(2**i) - 1
+		ind_up = int(2**(i+1)) - 1
+
+		k = 0
+		for j in range(ind_low,ind_up,1):
+			num = h_node[j].children[0].data - h_node[j].children[1].data
+			denum = s_node[j].children[0].data -s_node[j].children[1].data
+			x_node[j] = bo.TreeNode(num/denum)
+		
+			x_node[j].add_child(x_node[k+ind_up])
+			x_node[j].add_child(x_node[k+1+ind_up])
+
+			k = k + 2
+	
+
+	return x_node
+
+
+def am_option_hedge_market(x_node, s_node, h_0, R):
+	'''
+	Compute the risky security position for the option writer to readjust the portfolio.
+	C. Wibisono
+	05/23 '25
+	Function Argument(s):
+	s_node: (list of TreeNode objects) list of possible risky security prices.
+	x_node: (list of TreeNode objects) list of possible risky security position.
+	h_0: (float) American put option price.
+	R: (float) the rate of risk-free security as a form of money market account
+	Return:
+	y_node: (list of TreeNode object) list of money stock position.
+	'''
+
+	#Count the number of steps:
+	dim = len(x_node)
+	y_node =[None] * dim
+	N =int(np.log2(dim+1)) - 1
+
+	#Compute the initial money market position:
+	y_node[0] = bo.TreeNode(h_0 - (x_node[0].data)*s_node[0].data)
+
+	
+	#Compute the value of american option for each level:
+	for i in range(1,N+1,1):
+		ind_low = int(2**i) - 1
+		ind_up = int(2**(i+1)) - 1
+
+		ind_low_1 = int(2**(i-1)) -1
+		k = ind_low_1
+		q = 0
+		for j in range(ind_low,ind_up,1):
+			temp = y_node[k].data + ((1./((1.+R)**i)))*(x_node[k].data - x_node[j].data)*(s_node[j].data)
+			q = q + 1
+			if q % 2 == 0:
+				k = k + 1
+			else:
+				k = k
+			
+			y_node[j] = bo.TreeNode(temp)	
+	
+	#Make relation between nodes:
+	for i in range(N-2,-1,-1):
+		ind_low = int(2**i) - 1
+		ind_up = int(2**(i+1)) - 1
+
+		k = 0
+		for j in range(ind_low,ind_up,1):
+			y_node[j].add_child(y_node[k+ind_up])
+			y_node[j].add_child(y_node[k+1+ind_up])
+
+			k = k + 2
+
+	return y_node
+
+
+def am_hedging_option(s_node, h_node, time_step):
+	'''
+	Compute the portfolio for a given timestep to make the option writer position safe by rebalancing the portfolio.
+	C. Wibisono
+	05/23 '25
+	Function Argument(s):
+	s_node: (list of TreeNode objects) list of possible risky security prices.
+	h_node: (list of TreeNode objects) list of possible put option values.
+	time_step: (int) time_step to evaluate option writer position.
+	Return:
+	pos: (list of tuple) stock and money market position.
+	'''
+
+	arr_S = bo.risky_security_binom_price_level(time_step - 1, s_node)
+	arr_P = bo.risky_security_binom_price_level(time_step - 1, h_node)
+
+	pos_a = []
+	pos_b = []
+	pos_c = [] #temporary arr to store the put values
+	pos_d = [] #temporary arr to store the stock values
+	for k1 in arr_P.keys():
+		num = arr_P[k1][0] - arr_P[k1][1]
+		pos_a.append(num)
+		pos_c.append(k1)
+
+	for k2 in arr_S.keys():
+		denum = arr_S[k2][0] -arr_S[k2][1]
+		pos_b.append(denum)
+		pos_d.append(k2)
+
+	dim = len(pos_a)
+
+	#Compute the risky security and money market positions for the option writer to readjust:
+	pos = []
+	for i in range(dim):
+		temp = pos_a[i]/pos_b[i]
+		temp_b = pos_c[i] - temp*pos_d[i]
+		pos.append((temp, temp_b))
+
+	return pos
+

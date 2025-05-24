@@ -185,8 +185,13 @@ def risky_security_binom_price_level(level, node):
 	arr = {}
 	low = int(math.pow(2, level)) - 1
 	up = int(math.pow(2,level+1))-1
+	dim = len(node)
+	
 	for i in range(low, up, 1):
-		arr[node[i].data] = [node[i].children[0].data, node[i].children[1].data]
+		if i < dim- (up - low) -1:
+			arr[node[i].data] = [node[i].children[0].data, node[i].children[1].data]
+		else:
+			arr[node[i].data] = [0,0]
 
 	return arr
 
