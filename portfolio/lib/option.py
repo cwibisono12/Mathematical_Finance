@@ -485,7 +485,7 @@ def am_option_hedge_market(x_node, s_node, h_0, R):
 	h_0: (float) American put option price.
 	R: (float) the rate of risk-free security as a form of money market account
 	Return:
-	y_node: (list of TreeNode object) list of money stock position.
+	y_node: (list of TreeNode object) list of money market position.
 	'''
 
 	#Count the number of steps:
