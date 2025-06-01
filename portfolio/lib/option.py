@@ -356,9 +356,102 @@ def eu_option_binom_disc(R, U, D, S, X, N):
 
 	return C_E, P_E
 
+def eu_option_binom_disc_level(R, U, D, S, X, N):
+	'''
+	Compute the European call and put option prices following the binomial model with expiry time N per level.
+	C. Wibisono
+	05/20 '25
+	Function Argument(s):
+	R: (float) the rate of risk-free security as a form of money market account
+	U: (float) the rate of return if the risky security price goes up
+	D: (float) the rate of return if the risky security price goes down
+	S: (float) the risky security price at time 0
+	X: (float) the strike price
+	N: (int) the amount of time when the option is expired (maximum amount of time that the option can be exercised)
+	Return:
+	C_A: (float) the american call option price
+	P_A: (list of TreeNode objects) the american put option prices for each time step up to expiry time N
+	'''
+	
+	#Compute the European-Call Option Price per level:
+	#===================================================================
+	#Risk-Neutral Probability:
+	pstar = bo.p_star(R, U, D)
+
+	#Compute the possible nodes for the risky-security prices:
+	node = bo.risky_security_binom_price(N, S, U, D)
+
+	#Number of total nodes:
+	dim = len(node)
+
+	#Create another nodes representing the value of option at each time-step:
+	dim_temp = int(2**N) -1
+	CE_node = [None] * dim
+	PE_node = [None] * dim #Put Option Price is determined from the put-call parity
+
+	#Put-Call Parity:
+	pc_parity = S - X/((1+R)**N)
+
+	#Start pricing from the backward:
+	low = int(2**N) - 1
+	up = int(2**(N+1)) -1
+	
+	for i in range(low,up,1):
+		temp = bo.call_payoff(node[i].data,X)
+		temp_pe = temp - pc_parity
+		CE_node[i] = bo.TreeNode(temp)
+		PE_node[i] = bo.TreeNode(temp_pe)
+
+	#Compute the value of European option for level N-1:
+	ind_low = int(2**(N-1)) - 1
+	ind_up = int(2**(N)) - 1
+
+	k = 0
+	for j in range(ind_low,ind_up,1):
+		temp_b2_1 = pstar*bo.call_payoff(node[j].children[0].data,X)	
+		temp_b2_2 = (1-pstar)*bo.call_payoff(node[j].children[1].data,X)
+		temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
+		temp_pe_b2 = temp_b2 - pc_parity	
+		
+		CE_node[j] = bo.TreeNode(temp_b2)
+		CE_node[j].add_child(CE_node[k+ind_up])
+		CE_node[j].add_child(CE_node[k+1+ind_up])
+			
+		PE_node[j] = bo.TreeNode(temp_pe_b2)
+		PE_node[j].add_child(PE_node[k+ind_up])
+		PE_node[j].add_child(PE_node[k+1+ind_up])
+				
+		k = k + 2
+
+
+	#Compute the value of European option for each level:
+	for i in range(N-2,-1,-1):
+		ind_low = int(2**i) - 1
+		ind_up = int(2**(i+1)) - 1
+
+		k = 0
+		for j in range(ind_low,ind_up,1):
+			temp_b2_1 = pstar*CE_node[k+ind_up].data
+			temp_b2_2 = (1-pstar)*CE_node[k+1+ind_up].data
+			temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
+			temp_pe_b2 = temp_b2 - pc_parity	
+		
+			CE_node[j] = bo.TreeNode(temp_b2)
+			CE_node[j].add_child(CE_node[k+ind_up])
+			CE_node[j].add_child(CE_node[k+1+ind_up])
+			
+			PE_node[j] = bo.TreeNode(temp_pe_b2)
+			PE_node[j].add_child(PE_node[k+ind_up])
+			PE_node[j].add_child(PE_node[k+1+ind_up])
+				
+			k = k + 2
+
+
+	return CE_node, PE_node
+
 def am_option_binom_disc(R, U, D, S, X, N):
 	'''
-	Compute the American call and put option prices following the binomial model with expiray time N.
+	Compute the American call and put option prices following the binomial model with expiry time N.
 	Note that the option can be exercised somewhere between present (time 0) up to expiry time N.
 	C. Wibisono
 	05/20 '25
@@ -400,16 +493,40 @@ def am_option_binom_disc(R, U, D, S, X, N):
 		temp = bo.put_payoff(node[i].data,X)
 		H_node[i] = bo.TreeNode(temp)
 
+	#Compute the value of american option for N-1 level:
+	ind_low = int(2**(N-1)) - 1
+	ind_up = int(2**(N)) - 1
+
+	k = 0
+	
+	for j in range(ind_low,ind_up,1):
+		temp_b1 = bo.put_payoff(node[j].data,X)
+		temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data,X)	
+		temp_b2_2 = (1-pstar)*bo.put_payoff(node[j].children[1].data,X)
+		temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
+			
+		
+		if temp_b1 < temp_b2:
+			H_node[j] = bo.TreeNode(temp_b2)
+			H_node[j].add_child(H_node[k+ind_up])
+			H_node[j].add_child(H_node[k+1+ind_up])
+		else:
+			H_node[j] = bo.TreeNode(temp_b1)
+			H_node[j].add_child(H_node[k+ind_up])
+			H_node[j].add_child(H_node[k+1+ind_up])
+
+		k = k + 2
+
 	#Compute the value of american option for each level:
-	for i in range(N-1,-1,-1):
+	for i in range(N-2,-1,-1):
 		ind_low = int(2**i) - 1
 		ind_up = int(2**(i+1)) - 1
 
 		k = 0
 		for j in range(ind_low,ind_up,1):
 			temp_b1 = bo.put_payoff(node[j].data,X)
-			temp_b2_1 = pstar*bo.put_payoff(node[j].children[0].data,X)	
-			temp_b2_2 = (1-pstar)*bo.put_payoff(node[j].children[1].data,X)
+			temp_b2_1 = pstar*H_node[k+ind_up].data
+			temp_b2_2 = (1-pstar)*H_node[k+1+ind_up].data
 			temp_b2 = (1./(1.+R))*(temp_b2_1 + temp_b2_2)
 			
 		

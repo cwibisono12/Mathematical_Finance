@@ -64,7 +64,7 @@ def call_payoff(S, X):
 	val: (float) the payoff
 	'''
 
-	if S < X:
+	if S > X:
 		val = S - X
 	else:
 		val = 0
