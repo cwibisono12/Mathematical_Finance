@@ -14,4 +14,6 @@ if __name__ == "__main__":
 	X = 60
 	r = 0.08
 	C_E, P_E = bs.eu_option_bs(S_t, t, T, r, sigma, X)
+	greek_params = bs.eu_call_sensitivity(S_t, T, r, sigma, X)
 	print("call price:", C_E, "put_price:",P_E)
+	print("Call Sensitivity:",greek_params)

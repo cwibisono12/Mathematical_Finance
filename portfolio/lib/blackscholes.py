@@ -229,7 +229,7 @@ def eu_option_bs(S_t, t, T, r, sigma, X):
 			break
 
 	for k4 in range(dim):
-		if x[k4] <= dmin:
+		if x[k4] <= -dmin:
 			N_min_p = N_min_p + y[k4]
 		else:
 			break
@@ -246,3 +246,86 @@ def eu_option_bs(S_t, t, T, r, sigma, X):
 	
 	return C_E, P_E
 
+
+def eu_call_sensitivity(S_0, T, r, sigma, X):
+	'''
+	Compute the European call sensitivity with respect to several variables underlying the risky asset 
+	such as: the price, time, risk-free interest rate, and volatility based on the Black-Scholes Model.
+	C. Wibisono
+	06/02 '25 
+	Function Argument(s):
+	S_0: (float) the risky security price at time 0
+	T: (int) exercised time.
+	r: (float) continuosly compounded risk-free interest rate ---> exp(rt) instead of (1+R)^N where T=N*h
+	sigma: (float) volatility of the risky security
+	X: (float) strike price.
+	Return(s):
+	greek_params_CE: (dict) Dictionary containing greek parameters (key) and their values for European Call Option.
+	'''
+	
+	greek_params_CE = {}
+	d_max, d_min = eu_call_bound_cdf(S_0, 0, T, r, sigma, X)
+	d_max = round(d_max,3)
+	d_min = round(d_min,3)
+	
+	x = []
+	y = []
+	normalize = 0
+	for i in range(-3000,3001,1):
+		temp = i*0.001
+		y_temp = normal(temp,0,1.)
+		x.append(temp)
+		y.append(y_temp)
+		normalize = normalize + y_temp
+	N_max = 0
+	N_min = 0
+	dim = len(x)
+	for k1 in range(dim):
+		if x[k1] <= d_max:
+			N_max = N_max + y[k1]
+		else:
+			break
+
+	for k2 in range(dim):
+		if x[k2] <= d_min:
+			N_min = N_min + y[k2]
+		else:
+			break
+	
+	#Normalize the CDF:
+	N_max = N_max/normalize
+	N_min = N_min/normalize
+	
+	#Compute European Call sensitivity with respect to risky security price change:
+	delta_CE = N_max
+	greek_params_CE['delta'] = delta_CE
+
+	#Compute the second derivative of European Call sensitivity with respect to risky security price change:
+	a = S_0*sigma*math.pow(2*math.pi*T,0.5)
+	b = math.exp(-(math.pow(d_max,2.))/2.)
+	
+	gamma_CE = b/a
+	greek_params_CE['gamma'] = gamma_CE
+
+	#Compute the European Call sensitivity with respect to the time:
+	c1 = S_0*sigma*math.exp(-(math.pow(d_max,2.))/2.)
+	c2 = 2*math.pow(2*math.pi*T,0.5)
+	c = c1/c2
+
+	d = r*X*(math.exp(-(r*T)))*N_min
+
+	theta_CE = c - d
+	greek_params_CE['theta'] = theta_CE
+
+	#Compute the European Call sensitivity with respect to the risky security volatility:
+	e1 = S_0*math.pow(T,0.5)
+	e2 = math.pow(2*math.pi,0.5)
+	e3 = math.exp(-(math.pow(d_max,2.))/2.)
+	vega_CE = e1*e3/e2
+	greek_params_CE['vega'] = vega_CE
+
+	#Compute the European Call sensitivity with respect to the change in the risk-free interest rate:
+	rho_CE = T*X*(math.exp(-(r*T)))*N_min
+	greek_params_CE['rho_CE'] = rho_CE
+
+	return greek_params_CE
