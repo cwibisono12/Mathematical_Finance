@@ -134,3 +134,115 @@ def risky_security_black_scholes_price(mu, sigma, S_0, T):
 	
 	return arr
 
+def eu_call_bound_cdf(S_t, t, T, r, sigma, X):
+	'''
+	Compute the upper and lower bound for calculating the cumulative distribution function used for 
+	calculating the European Call Option from the Black-Scholes Model.
+	C. Wibisono
+	06/01 '25
+	Function Argument(s):
+	S_t: (float) the risky security price at time t
+	t: (int) the present time in which the asset is evaluated
+	T: (int) exercised time.
+	r: (float) continuosly compounded risk-free interest rate ---> exp(rt) instead of (1+R)^N where T=N*h
+	sigma: (float) volatility of the risky security
+	X: (float) strike price.
+	Return(s):
+	dmax: (float) the upper bound of the cdf
+	dmin: (float) the lower bound of the cdf
+	'''
+
+	a = math.log(S_t/X)
+	b1 = r + 0.5*math.pow(sigma,2.)
+	b2 = r - 0.5*math.pow(sigma,2.)
+	num1 = a + b1*(T-t)
+	num2 = a + b2*(T-t)
+	denum = sigma*math.pow(T-t,0.5)
+
+	dmax = num1/denum
+	dmin = num2/denum
+
+	return dmax, dmin
+
+def eu_option_bs(S_t, t, T, r, sigma, X):
+	'''
+	Compute the European Call and Put Options Price at time t with an exercise time T following the Black-Scholes Model.
+	C. Wibisono
+	06/01 '25
+	Function Argument(s):
+	S_t: (float) the risky security price at time t
+	t: (int) the present time in which the asset is evaluated
+	T: (int) exercised time.
+	r: (float) continuosly compounded risk-free interest rate ---> exp(rt) instead of (1+R)^N where T=N*h
+	sigma: (float) volatility of the risky security
+	X: (float) strike price.
+	Return(s):
+	C_E: (float) European call price at time t.
+	P_E: (float) European put price at time t.
+	'''
+	
+	dmax, dmin = eu_call_bound_cdf(S_t, t, T, r, sigma, X)
+	dmax = round(dmax,3)
+	dmin = round(dmin,3)
+	print("dmax:",dmax,"dmin:",dmin)
+	x = []
+	y = []
+	normalize = 0
+	for i in range(-3000,3001,1):
+		temp = i*0.001
+		y_temp = normal(temp,0,1.)
+		x.append(temp)
+		y.append(y_temp)
+		#print("x:",temp,"y:",y_temp)
+		normalize = normalize + y_temp
+	N_max = 0
+	N_min = 0
+	dim = len(x)
+	for k1 in range(dim):
+		if x[k1] <= dmax:
+			N_max = N_max + y[k1]
+		else:
+			break
+
+	for k2 in range(dim):
+		if x[k2] <= dmin:
+			N_min = N_min + y[k2]
+		else:
+			break
+	
+	#Normalize the CDF:
+	N_max = N_max/normalize
+	N_min = N_min/normalize
+
+	term1 = S_t*N_max
+	term2 = X*(math.exp(-r*(T-t)))*N_min
+	print("S_t:",S_t,"N_max:",N_max,"term1:", term1)
+	print("Contract:",X*math.exp(-r*(T-t)),"N_min:",N_min,"term2:",term2)
+	C_E = term1 - term2
+	
+	N_max_p = 0
+	N_min_p = 0
+	for k3 in range(dim):
+		if x[k3] <= -dmax:
+			N_max_p = N_max_p + y[k3]
+		else:
+			break
+
+	for k4 in range(dim):
+		if x[k4] <= dmin:
+			N_min_p = N_min_p + y[k4]
+		else:
+			break
+	
+	#Normalize the CDF	
+	N_max_p = N_max_p/normalize
+	N_min_p = N_min_p/normalize
+
+	term1p = X*(math.exp(-r*(T-t)))*N_min_p
+	term2p = S_t*N_max_p
+	P_E = term1p - term2p
+	print("Contract:",X*math.exp(-r*(T-t)),"N_min_p:",N_min_p,"term2:",term1p)
+	print("S_t:",S_t,"N_max_put:",N_max_p,"term1:", term2p)
+	
+	return C_E, P_E
+
